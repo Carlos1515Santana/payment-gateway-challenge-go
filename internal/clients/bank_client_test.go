@@ -108,7 +108,7 @@ func TestBankClient_ProcessPayment(t *testing.T) {
 				Amount:     1000,
 				Cvv:        "123",
 			},
-			expectedError:      ErrBankUnavailable,
+			expectedError:      ErrBankUnexpectedError,
 			expectedAuthorized: false,
 			expectedAuthCode:   "",
 		},
