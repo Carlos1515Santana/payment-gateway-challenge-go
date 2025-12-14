@@ -1,33 +1,52 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/models"
+	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/domain"
+	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/dto"
 	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/repository"
+	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
 
+// mockBankClient is a mock implementation of BankClient for testing
+type mockBankClient struct{}
+
+func (m *mockBankClient) ProcessPayment(ctx context.Context, req *dto.BankPaymentRequest) (*dto.BankPaymentResponse, error) {
+	return &dto.BankPaymentResponse{
+		Authorized:        true,
+		AuthorizationCode: "test-auth-code",
+	}, nil
+}
+
 func TestGetPaymentHandler(t *testing.T) {
-	payment := models.PostPaymentResponse{
-		Id:                 "test-id",
-		PaymentStatus:      "test-successful-status",
-		CardNumberLastFour: 1234,
-		ExpiryMonth:        10,
-		ExpiryYear:         2035,
-		Currency:           "GBP",
-		Amount:             100,
+	validUUID := "550e8400-e29b-41d4-a716-446655440000"
+	card := domain.Card{
+		Number:      "1234567890123456",
+		ExpiryMonth: 10,
+		ExpiryYear:  2035,
+	}
+	payment := &domain.Payment{
+		ID:       validUUID,
+		Card:     card,
+		Currency: "GBP",
+		Amount:   100,
+		Status:   domain.PaymentStatusAuthorized,
 	}
 	ps := repository.NewPaymentsRepository()
 	ps.AddPayment(payment)
 
-	payments := NewPaymentsHandler(ps)
+	mockBank := &mockBankClient{}
+	paymentService := services.NewPaymentService(ps, mockBank)
+	payments := NewPaymentsHandler(paymentService)
 
 	r := chi.NewRouter()
-	r.Get("/api/payments/{id}", payments.GetHandler())
+	r.Get("/api/payments/{id}", payments.GetPaymentHandler())
 
 	httpServer := &http.Server{
 		Addr:    ":8091",
@@ -40,7 +59,7 @@ func TestGetPaymentHandler(t *testing.T) {
 
 	t.Run("PaymentFound", func(t *testing.T) {
 		// Create a new HTTP request for testing
-		req, _ := http.NewRequest("GET", "/api/payments/test-id", nil)
+		req, _ := http.NewRequest("GET", "/api/payments/"+validUUID, nil)
 
 		// Create a new HTTP request recorder for recording the response
 		w := httptest.NewRecorder()
@@ -66,6 +85,6 @@ func TestGetPaymentHandler(t *testing.T) {
 		r.ServeHTTP(w, req)
 
 		// Check the HTTP status code in the response
-		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 }

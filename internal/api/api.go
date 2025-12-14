@@ -6,20 +6,19 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/cko-recruitment/payment-gateway-challenge-go/internal/repository"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/sync/errgroup"
 )
 
 type Api struct {
-	router       *chi.Mux
-	paymentsRepo *repository.PaymentsRepository
+	router   *chi.Mux
+	handlers *handlers
 }
 
 func New() *Api {
 	a := &Api{}
-	a.paymentsRepo = repository.NewPaymentsRepository()
+	a.handlers = loadDependencies()
 	a.setupRouter()
 
 	return a
@@ -56,9 +55,12 @@ func (a *Api) Run(ctx context.Context, addr string) error {
 func (a *Api) setupRouter() {
 	a.router = chi.NewRouter()
 	a.router.Use(middleware.Logger)
+	a.router.Use(middleware.Recoverer)
 
-	a.router.Get("/ping", a.PingHandler())
-	a.router.Get("/swagger/*", a.SwaggerHandler())
+	a.router.Get("/ping", a.handlers.PingHandler.PingHandler())
+	a.router.Get("/swagger/*", a.handlers.SwaggerHandler.SwaggerHandler())
 
-	a.router.Get("/api/payments/{id}", a.GetPaymentHandler())
+	a.router.Get("/api/payments/{id}", a.handlers.PaymentsHandler.GetPaymentHandler())
+	a.router.Post("/api/payments", a.handlers.PaymentsHandler.ProcessPaymentHandler())
+
 }
