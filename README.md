@@ -115,17 +115,17 @@ internal/
 ## Others
 
 ### 1. UUID for Payment ID Generation
-Uniqueness: Globally unique across distributed systems
-Security: Unpredictable, prevents ID enumeration attacks
-Project: Since there was no database, managing the payment ID is easier to implement using an already established library.
+- Uniqueness: Globally unique across distributed systems.
+- Security: Unpredictable, prevents ID enumeration attacks
+- Project: Since there was no database, managing the payment ID is easier to implement using an already established library.
 
 ### 2. Why CVV is NOT Stored
-Security: CVV only needed for authorization, not future reference
-Liability: Storing CVV increases security risks and regulatory liability
+- Security: CVV only needed for authorization, not future reference
+- Liability: Storing CVV increases security risks and regulatory liability
 
 ### 3. Why `dto` (Data Transfer Objects) instead of `models`
-Clear Intent: DTOs explicitly represent data structures for API communication (request/response)
-Semantic Accuracy: `Models` is ambiguous and could refer to domain models, view models, or database models
+- Clear Intent: DTOs explicitly represent data structures for API communication (request/response)
+- Semantic Accuracy: `Models` is ambiguous and could refer to domain models, view models, or database models
 
 ### 4. Mock Generation Strategy
 Time Saving: No manual mock implementation needed
